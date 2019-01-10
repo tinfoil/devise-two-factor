@@ -2,8 +2,12 @@ sudo: false
 language: ruby
 cache: bundler
 before_install:
-  - gem update --system
-  - gem update bundler
+  - if [ $TRAVIS_RUBY_VERSION == '2.1' ]; then
+      gem install bundler -v '< 2';
+    else
+      gem update --system;
+      gem update bundler;
+    fi
 gemfile:
   - Gemfile
   - gemfiles/rails_4_1.gemfile
