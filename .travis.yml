@@ -5,8 +5,8 @@ before_install:
   - if [ $TRAVIS_RUBY_VERSION == '2.1' ]; then
       gem install bundler -v '< 2';
     else
-      gem i rubygems-update -v '<3' && update_rubygems
-      gem update bundler
+      gem i rubygems-update -v '<3' && update_rubygems;
+      gem update bundler;
     fi
 gemfile:
   - Gemfile
