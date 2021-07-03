@@ -1,4 +1,3 @@
-require 'attr_encrypted'
 require 'rotp'
 
 module Devise
@@ -8,14 +7,18 @@ module Devise
       include Devise::Models::DatabaseAuthenticatable
 
       included do
-        unless singleton_class.ancestors.include?(AttrEncrypted)
-          extend AttrEncrypted
-        end
+        unless %i[otp_secret otp_secret=].all? { |attr| method_defined?(attr) }
+          require 'attr_encrypted'
 
-        unless attr_encrypted?(:otp_secret)
-          attr_encrypted :otp_secret,
-            :key  => self.otp_secret_encryption_key,
-            :mode => :per_attribute_iv_and_salt unless self.attr_encrypted?(:otp_secret)
+          unless singleton_class.ancestors.include?(AttrEncrypted)
+            extend AttrEncrypted
+          end
+
+          unless attr_encrypted?(:otp_secret)
+            attr_encrypted :otp_secret,
+              :key  => self.otp_secret_encryption_key,
+              :mode => :per_attribute_iv_and_salt unless self.attr_encrypted?(:otp_secret)
+          end
         end
 
         attr_accessor :otp_attempt
@@ -31,8 +34,10 @@ module Devise
         otp_secret = options[:otp_secret] || self.otp_secret
         return false unless code.present? && otp_secret.present?
 
-        totp = self.otp(otp_secret)
-        return consume_otp! if totp.verify_with_drift(code, self.class.otp_allowed_drift)
+        totp = otp(otp_secret)
+        if totp.verify(code, drift_behind: self.class.otp_allowed_drift, drift_ahead: self.class.otp_allowed_drift)
+          return consume_otp!
+        end
 
         false
       end
@@ -56,6 +61,7 @@ module Devise
       end
 
       def clean_up_passwords
+        super
         self.otp_attempt = nil
       end
 
